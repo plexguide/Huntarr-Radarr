@@ -8,7 +8,7 @@ This utilizes Radarr API Version - `3`. The Script: [radarr-hunter.sh](radarr-hu
 **Change Log:**
 - **v1**: Original code written
 
-<img width="781" alt="image" src="https://github.com/user-attachments/assets/d098a275-de72-4fa3-96a8-7a1d4603b2e1" />
+![image](https://github.com/user-attachments/assets/21721557-01a6-462a-b7c3-54bbcd8514c4)
 
 ### Another Project Guide (Just FYI)
 

@@ -13,7 +13,7 @@ This utilizes Radarr API Version - `3`. The Script: [radarr-hunter.sh](radarr-hu
 ### Other Project Guide (Just FYI)
 
 * Sister Version (Sonarr): https://github.com/plexguide/Sonarr-Hunter<br>
-* Visit: https://github.com/plexguide/Unraid_Intel-ARC_Deployment to convert your videos to AV1 Format (I've saved 325TB encoding to AV1)
+* Visit: https://github.com/plexguide/Unraid_Intel-ARC_Deployment - Converts videos to AV1 Format (I've saved 325TB encoding to AV1)
 
 # Radarr Missing Movie Search Tool
 

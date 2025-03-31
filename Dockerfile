@@ -4,11 +4,12 @@ FROM alpine:latest
 # Install bash, curl, and jq (required by the script)
 RUN apk add --no-cache bash curl jq
 
-# Set default environment variables for Radarr configuration
-ENV RADARR_URL="http://localhost:7878" \
-    RADARR_API_KEY="your_default_radarr_api_key" \
+# Set default environment variables for Radarr Hunter
+ENV API_KEY="your-api-key" \
+    API_URL="http://your-radarr-address:7878" \
     MAX_MOVIES="1" \
-    SLEEP_DURATION="900" \
+    SLEEP_DURATION="300" \
+    REFRESH_DURATION="30" \
     RANDOM_SELECTION="true"
 
 # Copy your radarr-hunter.sh script into the container

@@ -9,10 +9,11 @@ To run via Docker (this will be improved later)
 
 ```bash
 docker run -d --name radarr-hunter \
-  -e RADARR_URL="http://yourradarr:7878" \
-  -e RADARR_API_KEY="your_real_radarr_api_key" \
+  -e API_KEY="your-api-key" \
+  -e API_URL="http://your-radarr-address-7878" \
   -e MAX_MOVIES="1" \
-  -e SLEEP_DURATION="900" \
+  -e SLEEP_DURATION="600" \
+  -e REFRESH_DURATION="30" \
   -e RANDOM_SELECTION="true" \
   admin9705/radarr-hunter
 ```

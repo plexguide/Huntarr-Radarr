@@ -10,7 +10,7 @@ To run via Docker (this will be improved later)
 ```bash
 docker run -d --name radarr-hunter \
   -e API_KEY="your-api-key" \
-  -e API_URL="http://your-radarr-address-7878" \
+  -e API_URL="http://your-radarr-address:7878" \
   -e MAX_MOVIES="1" \
   -e SLEEP_DURATION="600" \
   -e REFRESH_DURATION="30" \

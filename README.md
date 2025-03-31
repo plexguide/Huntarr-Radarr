@@ -62,7 +62,8 @@ At the top of the script, you'll find these configurable options:
 API_KEY="your_api_key_here"            # Your Radarr API key
 RADARR_URL="http://your.radarr.ip:port" # URL to your Radarr instance
 MAX_MOVIES=1                            # Movies to process before restarting cycle
-SLEEP_DURATION=300                      # Seconds to wait after processing a movie (300=5min)
+SLEEP_DURATION=600                      # Seconds to wait after processing a movie (300=5min)
+REFRESH_DURATION="30"                   # This is a pause between multiple movies if MAX_MOVIES > 1 (a mini sleep)
 RANDOM_SELECTION=true                   # true for random selection, false for sequential
 ```
 

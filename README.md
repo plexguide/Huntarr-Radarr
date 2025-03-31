@@ -20,8 +20,10 @@ docker run -d --name radarr-hunter \
 
 **Change Log:**
 - **v1**: Original code written
+- **v2**: Updated variables and code for docker format
 
-![image](https://github.com/user-attachments/assets/21721557-01a6-462a-b7c3-54bbcd8514c4)
+<img width="985" alt="image" src="https://github.com/user-attachments/assets/c5f54723-6828-4633-8c9c-54f25f4a1e9c" />
+
 
 ### Other Project Guide (Just FYI)
 

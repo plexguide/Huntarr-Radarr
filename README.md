@@ -5,6 +5,18 @@
 **NOTE**  
 This utilizes Radarr API Version - `3`. The Script: [radarr-hunter.sh](radarr-hunter.sh)
 
+To run via Docker (this will be improved later) 
+
+```bash
+docker run -d --name radarr-hunter \
+  -e RADARR_URL="http://yourradarr:7878" \
+  -e RADARR_API_KEY="your_real_radarr_api_key" \
+  -e MAX_MOVIES="1" \
+  -e SLEEP_DURATION="900" \
+  -e RANDOM_SELECTION="true" \
+  admin9705/radarr-hunter
+```
+
 **Change Log:**
 - **v1**: Original code written
 

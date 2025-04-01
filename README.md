@@ -100,18 +100,17 @@ services:
       - SLEEP_DURATION=600
       - REFRESH_DURATION=30
       - RANDOM_SELECTION=true
-    networks:
-      - your-network-name
-
-networks:
-  your-network-name:
-    external: true
 ```
 
 Then run:
 
 ```bash
 docker-compose up -d radarr-hunter
+```
+
+To check on the status of the program, you should see new files downloading or you can type:
+```bash
+docker logs radarr-hunter
 ```
 
 ### Unraid Users

@@ -19,6 +19,25 @@ REFRESH_DURATION=${REFRESH_DURATION:-30}
 # Set to true to pick movies randomly, false to go in order
 RANDOM_SELECTION=${RANDOM_SELECTION:-true}
 
+# Enable debug mode to see API responses
+DEBUG_MODE=${DEBUG_MODE:-false}
+
+
+# ---------------------------
+# Debug Helper
+# ---------------------------
+debug_log() {
+  if [ "$DEBUG_MODE" = "true" ]; then
+    echo "[DEBUG] $1"
+    if [ -n "$2" ]; then
+      echo "$2" | head -n 20
+    fi
+  fi
+}
+
+debug_log "API URL: $API_URL"
+debug_log "API KEY: $API_KEY"
+
 # ---------------------------
 # Main infinite loop
 # ---------------------------
@@ -32,6 +51,8 @@ while true; do
     jq '[.[] | select(.monitored == true and .hasFile == false)]'
   )
 
+  debug_log "Raw movies API response first 100 chars:" "$(echo "$MISSING_MOVIES_JSON" | head -c 100)"
+  
   if [ -z "$MISSING_MOVIES_JSON" ]; then
     echo "ERROR: Unable to retrieve movie data from Radarr. Retrying in 60 seconds..."
     sleep 60

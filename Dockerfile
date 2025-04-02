@@ -10,7 +10,8 @@ ENV API_KEY="your-api-key" \
     MAX_MOVIES="1" \
     SLEEP_DURATION="300" \
     REFRESH_DURATION="30" \
-    RANDOM_SELECTION="true"
+    RANDOM_SELECTION="true" \
+    DEBUG="false"
 
 # Copy your radarr-hunter.sh script into the container
 COPY radarr-hunter.sh /usr/local/bin/radarr-hunter.sh

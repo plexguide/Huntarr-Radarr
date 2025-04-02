@@ -63,6 +63,7 @@ The following environment variables can be configured:
 | `SLEEP_DURATION` | Seconds to wait after processing a movie (600=10min) | 600 |
 | `REFRESH_DURATION` | Pause between multiple movies if MAX_MOVIES > 1 (mini sleep) | 30 |
 | `RANDOM_SELECTION` | Use random selection (`true`) or sequential (`false`) | true |
+| `DEBUG` |  Enable detailed debug logging (`true` or `false`)     | false |
 
 ## Installation Methods
 
@@ -79,6 +80,7 @@ docker run -d --name radarr-hunter \
   -e SLEEP_DURATION="600" \
   -e REFRESH_DURATION="30" \
   -e RANDOM_SELECTION="true" \
+  -e DEBUG="false"
   admin9705/radarr-hunter
 ```
 
@@ -100,6 +102,7 @@ services:
       - SLEEP_DURATION=600
       - REFRESH_DURATION=30
       - RANDOM_SELECTION=true
+      - DEBUG=false
 ```
 
 Then run:
@@ -143,6 +146,7 @@ Environment="MAX_MOVIES=1"
 Environment="SLEEP_DURATION=600"
 Environment="REFRESH_DURATION=30"
 Environment="RANDOM_SELECTION=true"
+Environment="DEBUG=false"
 ExecStart=/usr/local/bin/radarr-hunter.sh
 Restart=on-failure
 RestartSec=10

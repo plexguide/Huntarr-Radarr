@@ -72,7 +72,7 @@ My 12-year-old daughter loves singing, dancing, and exploring STEM. She's an A-B
 <table>
   <tr>
     <td width="50%">
-      <img src="https://github.com/user-attachments/assets/fab1d8e8-1503-4d01-adaf-983da18f65ca" width="100%"/>
+      <img src="https://github.com/user-attachments/assets/ef212161-e14c-484c-b6a1-20986022a2c3" width="100%"/>
       <p align="center"><em>Missing Movies Demo</em></p>
     </td>
     <td width="50%">
@@ -87,9 +87,6 @@ My 12-year-old daughter loves singing, dancing, and exploring STEM. She's an A-B
     </td>
   </tr>
 </table>
-
-![image]()
-
 
 ## Configuration Options
 

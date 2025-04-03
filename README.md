@@ -82,11 +82,14 @@ My 12-year-old daughter loves singing, dancing, and exploring STEM. She's an A-B
   </tr>
   <tr>
     <td colspan="2">
-      <img src="https://github.com/user-attachments/assets/dbaf9864-1db9-42a5-bd0b-60b6310f9694" width="100%"/>
+      <img src="https://github.com/user-attachments/assets/3e95f6d5-4a96-4bb8-a5b9-1d7b871ff94a" width="100%"/>
       <p align="center"><em>State Management System</em></p>
     </td>
   </tr>
 </table>
+
+![image]()
+
 
 ## Configuration Options
 

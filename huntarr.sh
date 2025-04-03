@@ -16,8 +16,8 @@ MAX_UPGRADES=${MAX_UPGRADES:-5}
 # Sleep duration in seconds after completing one full cycle (default 15 minutes)
 SLEEP_DURATION=${SLEEP_DURATION:-900}
 
-# New variable: Reset processed state file after this many hours (default 168 hours)
-# Note: Set to 0 to disable automatic reset (never forget processed items)
+# Reset processed state file after this many hours (default 168 hours).
+# Note: Set to 0 to disable automatic reset (never forget processed items).
 STATE_RESET_INTERVAL_HOURS=${STATE_RESET_INTERVAL_HOURS:-168}
 
 # ---------------------------
@@ -41,8 +41,6 @@ DEBUG_MODE=${DEBUG_MODE:-false}
 # ---------------------------
 # State Tracking Setup
 # ---------------------------
-# These state files persist IDs for processed missing movies and upgrade movies.
-# They will be automatically cleared if older than the reset interval.
 STATE_DIR="/tmp/huntarr-radarr-state"
 mkdir -p "$STATE_DIR"
 PROCESSED_MISSING_FILE="$STATE_DIR/processed_missing_ids.txt"
@@ -52,8 +50,6 @@ touch "$PROCESSED_MISSING_FILE" "$PROCESSED_UPGRADE_FILE"
 # ---------------------------
 # State Reset Check
 # ---------------------------
-# Check and reset state files if they are older than the configured reset interval.
-# Skip this check if STATE_RESET_INTERVAL_HOURS is set to 0 (disabled)
 if [ "$STATE_RESET_INTERVAL_HOURS" -gt 0 ]; then
     current_time=$(date +%s)
     missing_age=$(( current_time - $(stat -c %Y "$PROCESSED_MISSING_FILE") ))
@@ -81,24 +77,12 @@ debug_log() {
   fi
 }
 
-# ---------------------------
-# Internal Calculation (Do Not Modify)
-# ---------------------------
-# Convert hours to seconds for internal use.
-# If STATE_RESET_INTERVAL_HOURS is 0, set a very large number effectively disabling resets
-if [ "$STATE_RESET_INTERVAL_HOURS" -gt 0 ]; then
-    STATE_RESET_INTERVAL_SECONDS=$(( STATE_RESET_INTERVAL_HOURS * 3600 ))
-else
-    # Set to a very large value (100 years in seconds) when disabled
-    STATE_RESET_INTERVAL_SECONDS=3155760000
-fi
+debug_log "API KEY: $API_KEY"
+debug_log "API URL: $API_URL"
 
 # ---------------------------
 # Helper: Radarr API Calls
 # ---------------------------
-
-debug_log "API KEY: $API_KEY"
-debug_log "API URL $API_URL"
 
 get_movies() {
   curl -s -H "X-Api-Key: $API_KEY" "$API_URL/api/v3/movie"
@@ -113,7 +97,8 @@ refresh_movie() {
        "$API_URL/api/v3/command"
 }
 
-missing_movie_search() {
+movie_search() {
+  # Generic function to search for a movie by ID (works for both missing and upgrades)
   local movie_id="$1"
   curl -s -X POST \
        -H "X-Api-Key: $API_KEY" \
@@ -144,17 +129,14 @@ get_cutoff_unmet() {
 }
 
 get_cutoff_unmet_count() {
-  # Use the API's qualityCutoffNotMet parameter to directly get movies needing upgrades
+  # Returns the number of movies that need upgrades
   local query="$API_URL/api/v3/movie?qualityCutoffNotMet=true"
   
-  # Add monitored filter if needed
   if [ "$MONITORED_ONLY" = "true" ]; then
     query="${query}&monitored=true"
   fi
   
-  local response
-  response=$(curl -s -H "X-Api-Key: $API_KEY" "$query" | jq 'length')
-  echo "$response"
+  curl -s -H "X-Api-Key: $API_KEY" "$query" | jq 'length'
 }
 
 # ---------------------------
@@ -165,6 +147,7 @@ process_missing_movies() {
   local movies_json
   movies_json=$(get_movies)
   debug_log "Raw movies API response first 100 chars:" "$(echo "$movies_json" | head -c 100)"
+  
   if [ -z "$movies_json" ]; then
     echo "ERROR: Unable to retrieve movie data from Radarr. Retrying in 60s..."
     sleep 60
@@ -184,6 +167,7 @@ process_missing_movies() {
   total_missing=$(echo "$missing_json" | jq 'length')
   debug_log "Total missing movies: $total_missing"
   debug_log "First missing movie (if any):" "$(echo "$missing_json" | jq '.[0]')"
+  
   if [ "$total_missing" -eq 0 ]; then
     echo "No missing movies found."
     return
@@ -195,6 +179,7 @@ process_missing_movies() {
   echo "Found $total_missing movie(s) with missing files."
   local movies_processed=0
   local indices
+
   if [ "$RANDOM_SELECTION" = "true" ]; then
     indices=($(seq 0 $((total_missing - 1)) | shuf))
   else
@@ -210,6 +195,8 @@ process_missing_movies() {
     movie=$(echo "$missing_json" | jq ".[$index]")
     local movie_id
     movie_id=$(echo "$movie" | jq '.id')
+
+    # Skip if already processed in past cycles
     if echo "${processed_missing_ids[@]}" | grep -qw "$movie_id"; then
       continue
     fi
@@ -220,6 +207,7 @@ process_missing_movies() {
     movie_year=$(echo "$movie" | jq -r '.year')
 
     echo "Processing missing movie \"$movie_title ($movie_year)\" (ID: $movie_id)."
+    
     echo " - Refreshing movie..."
     local refresh_cmd
     refresh_cmd=$(refresh_movie "$movie_id")
@@ -236,7 +224,7 @@ process_missing_movies() {
 
     echo " - Searching for \"$movie_title\"..."
     local search_cmd
-    search_cmd=$(missing_movie_search "$movie_id")
+    search_cmd=$(movie_search "$movie_id")
     local search_id
     search_id=$(echo "$search_cmd" | jq '.id // empty')
     if [ -n "$search_id" ]; then
@@ -267,20 +255,20 @@ process_missing_movies() {
 # ---------------------------
 process_cutoff_upgrades() {
   echo "=== Checking for Quality Upgrades (Cutoff Unmet) ==="
-  
+
   local cutoff_json
   cutoff_json=$(get_cutoff_unmet)
   debug_log "Raw cutoff unmet response first 100 chars:" "$(echo "$cutoff_json" | head -c 100)"
-  
+
   if [ -z "$cutoff_json" ]; then
-    echo "ERROR: Unable to retrieve cutoff unmet data from Radarr. Retrying in 60s..."
+    echo "ERROR: Unable to retrieve cutoff-unmet data from Radarr. Retrying in 60s..."
     sleep 60
     return
   fi
-  
+
   local total_upgrades
   total_upgrades=$(echo "$cutoff_json" | jq 'length')
-  
+
   if [ "$total_upgrades" -eq 0 ]; then
     echo "No movies found that need quality upgrades."
     return
@@ -307,7 +295,8 @@ process_cutoff_upgrades() {
     movie=$(echo "$cutoff_json" | jq ".[$index]")
     local movie_id
     movie_id=$(echo "$movie" | jq '.id')
-    
+
+    # Skip if already processed in past cycles
     if echo "${processed_movie_ids[@]}" | grep -qw "$movie_id"; then
       continue
     fi
@@ -317,10 +306,8 @@ process_cutoff_upgrades() {
     local movie_year
     movie_year=$(echo "$movie" | jq -r '.year')
 
-    # We already filtered for monitored in the API call if MONITORED_ONLY=true
-    # No need to check again here
-
     echo "Processing quality upgrade for \"$movie_title ($movie_year)\" (ID: $movie_id)"
+    
     echo " - Refreshing movie information..."
     local refresh_cmd
     refresh_cmd=$(refresh_movie "$movie_id")
@@ -336,11 +323,25 @@ process_cutoff_upgrades() {
 
     echo " - Searching for quality upgrade..."
     local search_cmd
-    search_cmd=$(missing_movie_search "$movie_id")
+    search_cmd=$(movie_search "$movie_id")
     local search_id
     search_id=$(echo "$search_cmd" | jq '.id // empty')
+
     if [ -n "$search_id" ]; then
       echo "Search command accepted (ID: $search_id)."
+
+      # Rescan after searching, in case we pull down an upgraded file
+      echo " - Rescanning movie folder..."
+      local rescan_cmd
+      rescan_cmd=$(rescan_movie "$movie_id")
+      local rescan_id
+      rescan_id=$(echo "$rescan_cmd" | jq '.id // empty')
+      if [ -n "$rescan_id" ]; then
+        echo "Rescan command accepted (ID: $rescan_id)."
+      else
+        echo "WARNING: Rescan command not available or failed."
+      fi
+
       echo "$movie_id" >> "$PROCESSED_UPGRADE_FILE"
       processed_movie_ids+=("$movie_id")
       movies_processed=$((movies_processed + 1))
@@ -352,10 +353,12 @@ process_cutoff_upgrades() {
   done
 
   echo "Completed processing $movies_processed upgrade movies for this cycle."
+
+  # Prevent processed list from growing unbounded
   local processed_count
   processed_count=$(wc -l < "$PROCESSED_UPGRADE_FILE")
   if [ "$processed_count" -gt 1000 ]; then
-    echo "Processed upgrade movies list is getting large. Truncating to last 500 entries."
+    echo "Processed-upgrade-movies list is large. Truncating to last 500 entries."
     tail -n 500 "$PROCESSED_UPGRADE_FILE" > "${PROCESSED_UPGRADE_FILE}.tmp"
     mv "${PROCESSED_UPGRADE_FILE}.tmp" "$PROCESSED_UPGRADE_FILE"
   fi
@@ -382,12 +385,11 @@ while true; do
   esac
 
   # Calculate minutes remaining until the state files are reset
-  # Skip this if reset is disabled (STATE_RESET_INTERVAL_HOURS=0)
   if [ "$STATE_RESET_INTERVAL_HOURS" -gt 0 ]; then
     current_time=$(date +%s)
-    # Find the minimum remaining time among the two state files
-    missing_remaining=$(( STATE_RESET_INTERVAL_SECONDS - ( current_time - $(stat -c %Y "$PROCESSED_MISSING_FILE") ) ))
-    upgrade_remaining=$(( STATE_RESET_INTERVAL_SECONDS - ( current_time - $(stat -c %Y "$PROCESSED_UPGRADE_FILE") ) ))
+    missing_remaining=$(( (STATE_RESET_INTERVAL_HOURS * 3600) - ( current_time - $(stat -c %Y "$PROCESSED_MISSING_FILE") ) ))
+    upgrade_remaining=$(( (STATE_RESET_INTERVAL_HOURS * 3600) - ( current_time - $(stat -c %Y "$PROCESSED_UPGRADE_FILE") ) ))
+    # Determine whichever is smaller
     if [ "$missing_remaining" -gt "$upgrade_remaining" ]; then
       remaining_seconds=$upgrade_remaining
     else
@@ -400,7 +402,7 @@ while true; do
     echo "Cycle complete. Waiting $SLEEP_DURATION seconds before next cycle..."
     echo "State reset is disabled. Processed items will be remembered indefinitely."
   fi
-  
+
   echo "Like the tool? Donate toward my daughter's college fund via donate.plex.one and make her day!"
   sleep "$SLEEP_DURATION"
 done

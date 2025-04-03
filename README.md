@@ -76,7 +76,7 @@ My 12-year-old daughter loves singing, dancing, and exploring STEM. She's an A-B
       <p align="center"><em>Missing Movies Demo</em></p>
     </td>
     <td width="50%">
-      <img src="https://github.com/user-attachments/assets/dbaf9864-1db9-42a5-bd0b-60b6310f9694" width="100%"/>
+      <img src="https://github.com/user-attachments/assets/4843b80b-ea1f-4ff0-b76f-8187e3912883" width="100%"/>
       <p align="center"><em>Quality Upgrade Demo</em></p>
     </td>
   </tr>

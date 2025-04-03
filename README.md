@@ -72,7 +72,7 @@ My 12-year-old daughter loves singing, dancing, and exploring STEM. She's an A-B
 <table>
   <tr>
     <td width="50%">
-      <img src="https://github.com/user-attachments/assets/dbaf9864-1db9-42a5-bd0b-60b6310f9694" width="100%"/>
+      <img src="https://github.com/user-attachments/assets/fab1d8e8-1503-4d01-adaf-983da18f65ca" width="100%"/>
       <p align="center"><em>Missing Movies Demo</em></p>
     </td>
     <td width="50%">

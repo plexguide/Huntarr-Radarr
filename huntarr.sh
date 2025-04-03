@@ -403,6 +403,6 @@ while true; do
     echo "State reset is disabled. Processed items will be remembered indefinitely."
   fi
 
-  echo "⭐ Enjoy the Tool? Donate @ https://donate.plex.one towards my Daughter's 501 College Fund!"
+  echo "Like the tool? Donate toward my daughter's college fund via donate.plex.one and make her day!"
   sleep "$SLEEP_DURATION"
 done

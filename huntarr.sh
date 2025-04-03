@@ -132,16 +132,28 @@ rescan_movie() {
 }
 
 get_cutoff_unmet() {
-  local page="${1:-1}"
-  curl -s -H "X-Api-Key: $API_KEY" \
-       "$API_URL/api/v3/movie/movie" | \
-       jq '[.[] | select(.qualityCutoffNotMet == true)]'
+  # Use the API's qualityCutoffNotMet parameter to directly get movies needing upgrades
+  local query="$API_URL/api/v3/movie?qualityCutoffNotMet=true"
+  
+  # Add monitored filter if needed
+  if [ "$MONITORED_ONLY" = "true" ]; then
+    query="${query}&monitored=true"
+  fi
+  
+  curl -s -H "X-Api-Key: $API_KEY" "$query"
 }
 
 get_cutoff_unmet_count() {
+  # Use the API's qualityCutoffNotMet parameter to directly get movies needing upgrades
+  local query="$API_URL/api/v3/movie?qualityCutoffNotMet=true"
+  
+  # Add monitored filter if needed
+  if [ "$MONITORED_ONLY" = "true" ]; then
+    query="${query}&monitored=true"
+  fi
+  
   local response
-  response=$(curl -s -H "X-Api-Key: $API_KEY" "$API_URL/api/v3/movie" | \
-              jq '[.[] | select(.qualityCutoffNotMet == true)] | length')
+  response=$(curl -s -H "X-Api-Key: $API_KEY" "$query" | jq 'length')
   echo "$response"
 }
 
@@ -258,6 +270,8 @@ process_cutoff_upgrades() {
   
   local cutoff_json
   cutoff_json=$(get_cutoff_unmet)
+  debug_log "Raw cutoff unmet response first 100 chars:" "$(echo "$cutoff_json" | head -c 100)"
+  
   if [ -z "$cutoff_json" ]; then
     echo "ERROR: Unable to retrieve cutoff unmet data from Radarr. Retrying in 60s..."
     sleep 60
@@ -302,17 +316,9 @@ process_cutoff_upgrades() {
     movie_title=$(echo "$movie" | jq -r '.title')
     local movie_year
     movie_year=$(echo "$movie" | jq -r '.year')
-    local quality_profile
-    quality_profile=$(echo "$movie" | jq -r '.qualityProfileId')
 
-    if [ "$MONITORED_ONLY" = "true" ]; then
-      local movie_monitored
-      movie_monitored=$(echo "$movie" | jq '.monitored')
-      if [ "$movie_monitored" != "true" ]; then
-        echo "Skipping unmonitored movie: $movie_title ($movie_year)"
-        continue
-      fi
-    fi
+    # We already filtered for monitored in the API call if MONITORED_ONLY=true
+    # No need to check again here
 
     echo "Processing quality upgrade for \"$movie_title ($movie_year)\" (ID: $movie_id)"
     echo " - Refreshing movie information..."
@@ -395,6 +401,6 @@ while true; do
     echo "State reset is disabled. Processed items will be remembered indefinitely."
   fi
   
-  echo "Enjoy the Tool? Donate via https://donate.plex.one towards Daughter's 501 College Fund!"
+  echo "Like the tool? Donate toward my daughter's college fund via donate.plex.one and make her day!"
   sleep "$SLEEP_DURATION"
 done

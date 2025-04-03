@@ -4,8 +4,8 @@
 # Main Configuration Variables
 # ---------------------------
 
-API_KEY=${API_KEY:-your-api-key}
-API_URL=${API_URL:-http://10.0.0.10:7878}  # Radarr typically runs on port 7878
+API_KEY=${API_KEY:-your_apikey}
+API_URL=${API_URL:-your_address:7878}  # Radarr typically runs on port 7878
 
 # Maximum number of missing movies to process per cycle
 MAX_MISSING=${MAX_MISSING:-1}

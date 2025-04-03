@@ -4,39 +4,39 @@
 # Main Configuration Variables
 # ---------------------------
 
-API_KEY=${API_KEY:-"your-api-key"}
-API_URL=${API_URL:-"http://your-radarr-address:7878"}
+API_KEY="your-apikey"
+API_URL="http://ip-address:7878"  # Radarr typically runs on port 7878
 
 # Maximum number of missing movies to process per cycle
-MAX_MISSING=${MAX_MISSING:-1}
+MAX_MISSING="1"
 
 # Maximum number of upgrade movies to process per cycle
-MAX_UPGRADES=${MAX_UPGRADES:-5}
+MAX_UPGRADES="5"
 
 # Sleep duration in seconds after completing one full cycle (default 15 minutes)
-SLEEP_DURATION=${SLEEP_DURATION:-900}
+SLEEP_DURATION="900"
 
 # Reset processed state file after this many hours (default 168 hours).
 # Note: Set to 0 to disable automatic reset (never forget processed items).
-STATE_RESET_INTERVAL_HOURS=${STATE_RESET_INTERVAL_HOURS:-168}
+STATE_RESET_INTERVAL_HOURS="168"
 
 # ---------------------------
 # Miscellaneous Configuration
 # ---------------------------
 # Set to true to pick items randomly, false to go in order
-RANDOM_SELECTION=${RANDOM_SELECTION:-true}
+RANDOM_SELECTION="true"
 
 # If MONITORED_ONLY is "true", only process missing or upgrade movies from monitored movies
-MONITORED_ONLY=${MONITORED_ONLY:-true}
+MONITORED_ONLY="true"
 
 # SEARCH_TYPE controls what we search for:
 # - "missing" => Only find movies that are missing
 # - "upgrade" => Only find movies that don't meet quality cutoff
 # - "both"    => Do missing movies first, then upgrade movies
-SEARCH_TYPE=${SEARCH_TYPE:-"both"}
+SEARCH_TYPE="both"
 
 # Enable debug mode to see API responses
-DEBUG_MODE=${DEBUG_MODE:-false}
+DEBUG_MODE="false"
 
 # ---------------------------
 # State Tracking Setup
@@ -403,6 +403,6 @@ while true; do
     echo "State reset is disabled. Processed items will be remembered indefinitely."
   fi
 
-  echo "⭐ Enjoy the Tool? Donate @ https://donate.plex.one towards my Daughter's 501 College Fund!"
+  echo "Like the tool? Donate toward my daughter's college fund via donate.plex.one and make her day!"
   sleep "$SLEEP_DURATION"
 done

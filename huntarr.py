@@ -10,8 +10,8 @@ import json
 import random
 import logging
 import requests
-import datetime
 import pathlib
+
 from typing import List, Dict, Any, Optional, Union
 
 # ---------------------------
@@ -19,19 +19,35 @@ from typing import List, Dict, Any, Optional, Union
 # ---------------------------
 
 API_KEY = os.environ.get("API_KEY", "your-api-key")
-API_URL = os.environ.get("API_URL", "http://your-radarr-address:7878")
+API_URL = os.environ.get("API_URL", "your-ip-address:7878")
 
 # Maximum number of missing movies to process per cycle
-MAX_MISSING = int(os.environ.get("MAX_MISSING", "1"))
+try:
+    MAX_MISSING = int(os.environ.get("MAX_MISSING", "1"))
+except ValueError:
+    MAX_MISSING = 1
+    print(f"Warning: Invalid MAX_MISSING value, using default: {MAX_MISSING}")
 
 # Maximum number of upgrade movies to process per cycle
-MAX_UPGRADES = int(os.environ.get("MAX_UPGRADES", "5"))
+try:
+    MAX_UPGRADES = int(os.environ.get("MAX_UPGRADES", "5"))
+except ValueError:
+    MAX_UPGRADES = 5
+    print(f"Warning: Invalid MAX_UPGRADES value, using default: {MAX_UPGRADES}")
 
 # Sleep duration in seconds after completing one full cycle (default 15 minutes)
-SLEEP_DURATION = int(os.environ.get("SLEEP_DURATION", "900"))
+try:
+    SLEEP_DURATION = int(os.environ.get("SLEEP_DURATION", "900"))
+except ValueError:
+    SLEEP_DURATION = 900
+    print(f"Warning: Invalid SLEEP_DURATION value, using default: {SLEEP_DURATION}")
 
 # Reset processed state file after this many hours (default 168 hours = 1 week)
-STATE_RESET_INTERVAL_HOURS = int(os.environ.get("STATE_RESET_INTERVAL_HOURS", "168"))
+try:
+    STATE_RESET_INTERVAL_HOURS = int(os.environ.get("STATE_RESET_INTERVAL_HOURS", "168"))
+except ValueError:
+    STATE_RESET_INTERVAL_HOURS = 168
+    print(f"Warning: Invalid STATE_RESET_INTERVAL_HOURS value, using default: {STATE_RESET_INTERVAL_HOURS}")
 
 # ---------------------------
 # Miscellaneous Configuration
@@ -81,13 +97,16 @@ def debug_log(message: str, data: Any = None) -> None:
     if DEBUG_MODE:
         logger.debug(f"{message}")
         if data is not None:
-            if isinstance(data, (dict, list)):
-                try:
-                    logger.debug(json.dumps(data, indent=2)[:500] + "..." if len(json.dumps(data)) > 500 else json.dumps(data, indent=2))
-                except:
-                    logger.debug(str(data)[:500] + "..." if len(str(data)) > 500 else str(data))
-            else:
-                logger.debug(str(data)[:500] + "..." if len(str(data)) > 500 else str(data))
+            try:
+                as_json = json.dumps(data)
+                if len(as_json) > 500:
+                    as_json = as_json[:500] + "..."
+                logger.debug(as_json)
+            except:
+                data_str = str(data)
+                if len(data_str) > 500:
+                    data_str = data_str[:500] + "..."
+                logger.debug(data_str)
 
 def load_processed_ids(file_path: pathlib.Path) -> List[int]:
     """Load processed movie IDs from a file"""
@@ -109,7 +128,8 @@ def save_processed_id(file_path: pathlib.Path, movie_id: int) -> None:
 def truncate_processed_list(file_path: pathlib.Path, max_lines: int = 500) -> None:
     """Truncate the processed list to prevent unbounded growth"""
     try:
-        if file_path.stat().st_size > 10000:  # Only check if file is getting large
+        # Only check if file is actually large; you can adjust thresholds if desired
+        if file_path.stat().st_size > 10000:  
             lines = file_path.read_text().splitlines()
             if len(lines) > max_lines:
                 logger.info(f"Processed list is large. Truncating to last {max_lines} entries.")
@@ -145,9 +165,9 @@ def radarr_request(endpoint: str, method: str = "GET", data: Dict = None) -> Opt
     }
     
     try:
-        if method == "GET":
+        if method.upper() == "GET":
             response = requests.get(url, headers=headers, timeout=30)
-        elif method == "POST":
+        elif method.upper() == "POST":
             response = requests.post(url, headers=headers, json=data, timeout=30)
         else:
             logger.error(f"Unsupported HTTP method: {method}")
@@ -160,13 +180,27 @@ def radarr_request(endpoint: str, method: str = "GET", data: Dict = None) -> Opt
         return None
 
 def get_movies() -> List[Dict]:
-    """Get all movies from Radarr"""
+    """Get all movies from Radarr (full list)"""
     result = radarr_request("movie")
-    debug_log("Raw movies API response sample:", result[:2] if result and len(result) > 2 else result)
+    if result:
+        debug_log("Raw movies API response sample:", result[:2] if len(result) > 2 else result)
+    return result or []
+
+def get_cutoff_unmet() -> List[Dict]:
+    """
+    Directly query Radarr for only those movies where the quality cutoff is not met.
+    This is the most reliable way for big libraries. Optionally filter by monitored.
+    """
+    query = "movie?qualityCutoffNotMet=true"
+    if MONITORED_ONLY:
+        # Append &monitored=true to the querystring
+        query += "&monitored=true"
+    
+    # Perform the request
+    result = radarr_request(query, method="GET")
     return result or []
 
 def refresh_movie(movie_id: int) -> Optional[Dict]:
-    """Refresh movie metadata"""
     data = {
         "name": "RefreshMovie",
         "movieIds": [movie_id]
@@ -196,87 +230,73 @@ def process_missing_movies() -> None:
     """Process missing movies from the library"""
     logger.info("=== Checking for Missing Movies ===")
     
-    # Get all movies
     movies = get_movies()
     if not movies:
         logger.error("ERROR: Unable to retrieve movie data from Radarr. Retrying in 60s...")
         time.sleep(60)
         return
     
-    # Filter for missing movies
     if MONITORED_ONLY:
         logger.info("MONITORED_ONLY=true => only monitored movies without files.")
-        missing_movies = [m for m in movies if m.get('monitored', False) and not m.get('hasFile', False)]
+        missing_movies = [m for m in movies if m.get('monitored') and not m.get('hasFile')]
     else:
         logger.info("MONITORED_ONLY=false => all movies without files.")
-        missing_movies = [m for m in movies if not m.get('hasFile', False)]
-    
-    debug_log(f"Total missing movies: {len(missing_movies)}")
-    if len(missing_movies) > 0:
-        debug_log("First missing movie (if any):", missing_movies[0] if missing_movies else None)
+        missing_movies = [m for m in movies if not m.get('hasFile')]
     
     if not missing_movies:
         logger.info("No missing movies found.")
         return
     
-    # Load list of already processed movie IDs
-    processed_missing_ids = load_processed_ids(PROCESSED_MISSING_FILE)
-    
     logger.info(f"Found {len(missing_movies)} movie(s) with missing files.")
+    processed_missing_ids = load_processed_ids(PROCESSED_MISSING_FILE)
     movies_processed = 0
     
-    # Process movies in random or sequential order
     indices = list(range(len(missing_movies)))
     if RANDOM_SELECTION:
         random.shuffle(indices)
     
-    for index in indices:
+    for i in indices:
         if MAX_MISSING > 0 and movies_processed >= MAX_MISSING:
             break
         
-        movie = missing_movies[index]
+        movie = missing_movies[i]
         movie_id = movie.get('id')
-        
-        # Skip if already processed in past cycles
-        if movie_id in processed_missing_ids:
+        if not movie_id or movie_id in processed_missing_ids:
             continue
         
-        movie_title = movie.get('title', 'Unknown Title')
-        movie_year = movie.get('year', 'Unknown Year')
+        title = movie.get('title', 'Unknown Title')
+        year = movie.get('year', 'Unknown Year')
         
-        logger.info(f"Processing missing movie \"{movie_title} ({movie_year})\" (ID: {movie_id}).")
+        logger.info(f"Processing missing movie \"{title} ({year})\" (ID: {movie_id}).")
         
-        # Step 1: Refresh movie metadata
+        # Refresh
         logger.info(" - Refreshing movie...")
-        refresh_result = refresh_movie(movie_id)
-        if not refresh_result or 'id' not in refresh_result:
-            logger.warning(f"WARNING: Refresh command failed for {movie_title}. Skipping.")
+        refresh_res = refresh_movie(movie_id)
+        if not refresh_res or 'id' not in refresh_res:
+            logger.warning(f"WARNING: Refresh command failed for {title}. Skipping.")
             time.sleep(10)
             continue
         
-        refresh_id = refresh_result.get('id')
-        logger.info(f"Refresh command accepted (ID: {refresh_id}). Waiting 5s...")
+        logger.info(f"Refresh command accepted (ID: {refresh_res.get('id')}). Waiting 5s...")
         time.sleep(5)
         
-        # Step 2: Search for the movie
-        logger.info(f" - Searching for \"{movie_title}\"...")
-        search_result = movie_search(movie_id)
-        if search_result and 'id' in search_result:
-            search_id = search_result.get('id')
-            logger.info(f"Search command accepted (ID: {search_id}).")
+        # Search
+        logger.info(f" - Searching for \"{title}\"...")
+        search_res = movie_search(movie_id)
+        if search_res and 'id' in search_res:
+            logger.info(f"Search command accepted (ID: {search_res.get('id')}).")
         else:
             logger.warning("WARNING: Movie search failed.")
         
-        # Step 3: Rescan movie folder
+        # Rescan
         logger.info(" - Rescanning movie folder...")
-        rescan_result = rescan_movie(movie_id)
-        if rescan_result and 'id' in rescan_result:
-            rescan_id = rescan_result.get('id')
-            logger.info(f"Rescan command accepted (ID: {rescan_id}).")
+        rescan_res = rescan_movie(movie_id)
+        if rescan_res and 'id' in rescan_res:
+            logger.info(f"Rescan command accepted (ID: {rescan_res.get('id')}).")
         else:
             logger.warning("WARNING: Rescan command not available or failed.")
         
-        # Mark as processed and increment counter
+        # Mark processed
         save_processed_id(PROCESSED_MISSING_FILE, movie_id)
         movies_processed += 1
         logger.info(f"Processed {movies_processed}/{MAX_MISSING} missing movies this cycle.")
@@ -288,91 +308,64 @@ def process_missing_movies() -> None:
 # Quality Upgrades Logic
 # ---------------------------
 def process_cutoff_upgrades() -> None:
-    """Process movies that need quality upgrades"""
+    """Process movies that need quality upgrades."""
     logger.info("=== Checking for Quality Upgrades (Cutoff Unmet) ===")
     
-    # Get all movies
-    movies = get_movies()
-    if not movies:
-        logger.error("ERROR: Unable to retrieve movie data from Radarr. Retrying in 60s...")
-        time.sleep(60)
-        return
-    
-    # Filter for movies that need quality upgrades
-    if MONITORED_ONLY:
-        logger.info("MONITORED_ONLY=true => only monitored movies needing quality upgrades.")
-        upgrade_movies = [m for m in movies if m.get('monitored', False) and 
-                         m.get('hasFile', False) and 
-                         m.get('qualityCutoffNotMet', False)]
-    else:
-        logger.info("MONITORED_ONLY=false => all movies needing quality upgrades.")
-        upgrade_movies = [m for m in movies if m.get('hasFile', False) and 
-                         m.get('qualityCutoffNotMet', False)]
-    
-    debug_log(f"Found {len(upgrade_movies)} movies that need quality upgrades")
-    if len(upgrade_movies) > 0:
-        debug_log("First upgrade movie (if any):", upgrade_movies[0] if upgrade_movies else None)
+    # Instead of retrieving the full movie list and filtering, 
+    # directly query the subset of movies that do not meet cutoff:
+    upgrade_movies = get_cutoff_unmet()
     
     if not upgrade_movies:
         logger.info("No movies found that need quality upgrades.")
         return
     
-    # Load list of already processed movie IDs
-    processed_upgrade_ids = load_processed_ids(PROCESSED_UPGRADE_FILE)
-    
     logger.info(f"Found {len(upgrade_movies)} movies that need quality upgrades.")
+    processed_upgrade_ids = load_processed_ids(PROCESSED_UPGRADE_FILE)
     movies_processed = 0
     
-    # Process movies in random or sequential order
     indices = list(range(len(upgrade_movies)))
     if RANDOM_SELECTION:
         random.shuffle(indices)
     
-    for index in indices:
+    for i in indices:
         if MAX_UPGRADES > 0 and movies_processed >= MAX_UPGRADES:
             break
         
-        movie = upgrade_movies[index]
+        movie = upgrade_movies[i]
         movie_id = movie.get('id')
-        
-        # Skip if already processed in past cycles
-        if movie_id in processed_upgrade_ids:
+        if not movie_id or movie_id in processed_upgrade_ids:
             continue
         
-        movie_title = movie.get('title', 'Unknown Title')
-        movie_year = movie.get('year', 'Unknown Year')
+        title = movie.get('title', 'Unknown Title')
+        year = movie.get('year', 'Unknown Year')
+        logger.info(f"Processing quality upgrade for \"{title} ({year})\" (ID: {movie_id})")
         
-        logger.info(f"Processing quality upgrade for \"{movie_title} ({movie_year})\" (ID: {movie_id})")
-        
-        # Step 1: Refresh movie metadata
+        # Refresh
         logger.info(" - Refreshing movie information...")
-        refresh_result = refresh_movie(movie_id)
-        if not refresh_result or 'id' not in refresh_result:
-            logger.warning(f"WARNING: Refresh command failed. Skipping this movie.")
+        refresh_res = refresh_movie(movie_id)
+        if not refresh_res or 'id' not in refresh_res:
+            logger.warning("WARNING: Refresh command failed. Skipping this movie.")
             time.sleep(10)
             continue
         
-        refresh_id = refresh_result.get('id')
-        logger.info(f"Refresh command accepted (ID: {refresh_id}). Waiting 5s...")
+        logger.info(f"Refresh command accepted (ID: {refresh_res.get('id')}). Waiting 5s...")
         time.sleep(5)
         
-        # Step 2: Search for quality upgrade
+        # Search
         logger.info(" - Searching for quality upgrade...")
-        search_result = movie_search(movie_id)
-        if search_result and 'id' in search_result:
-            search_id = search_result.get('id')
-            logger.info(f"Search command accepted (ID: {search_id}).")
+        search_res = movie_search(movie_id)
+        if search_res and 'id' in search_res:
+            logger.info(f"Search command accepted (ID: {search_res.get('id')}).")
             
-            # Step 3: Rescan movie folder
+            # Rescan
             logger.info(" - Rescanning movie folder...")
-            rescan_result = rescan_movie(movie_id)
-            if rescan_result and 'id' in rescan_result:
-                rescan_id = rescan_result.get('id')
-                logger.info(f"Rescan command accepted (ID: {rescan_id}).")
+            rescan_res = rescan_movie(movie_id)
+            if rescan_res and 'id' in rescan_res:
+                logger.info(f"Rescan command accepted (ID: {rescan_res.get('id')}).")
             else:
                 logger.warning("WARNING: Rescan command not available or failed.")
             
-            # Mark as processed and increment counter
+            # Mark processed
             save_processed_id(PROCESSED_UPGRADE_FILE, movie_id)
             movies_processed += 1
             logger.info(f"Processed {movies_processed}/{MAX_UPGRADES} upgrade movies this cycle.")
@@ -381,15 +374,13 @@ def process_cutoff_upgrades() -> None:
             time.sleep(10)
     
     logger.info(f"Completed processing {movies_processed} upgrade movies for this cycle.")
-    
-    # Truncate processed list if needed
     truncate_processed_list(PROCESSED_UPGRADE_FILE)
 
 # ---------------------------
 # Main Loop
 # ---------------------------
 def calculate_reset_time() -> None:
-    """Calculate and display time until the next state reset"""
+    """Calculate and display time until the next state reset."""
     if STATE_RESET_INTERVAL_HOURS <= 0:
         logger.info("State reset is disabled. Processed items will be remembered indefinitely.")
         return
@@ -410,10 +401,10 @@ def calculate_reset_time() -> None:
 def main_loop() -> None:
     """Main processing loop"""
     while True:
-        # Check if state files need to be reset
+        # Reset old state files if needed
         check_state_reset()
         
-        # Process movies based on search type
+        # Process based on SEARCH_TYPE
         if SEARCH_TYPE == "missing":
             process_missing_movies()
         elif SEARCH_TYPE == "upgrade":

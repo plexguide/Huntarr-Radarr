@@ -1,12 +1,5 @@
-FROM python:3.11-alpine
-
-LABEL maintainer="PlexGuide" \
-      description="Huntarr [Radarr Edition] - Automates finding missing movies and quality upgrades" \
-      version="8.0" \
-      url="https://github.com/plexguide/Huntarr-Radarr"
-
-# Install required dependencies
-RUN pip install --no-cache-dir requests
+# Start from a lightweight Python image
+FROM python:3.10-slim
 
 # Set default environment variables
 ENV API_KEY="" \
@@ -20,21 +13,25 @@ ENV API_KEY="" \
     STATE_RESET_INTERVAL_HOURS="168" \
     DEBUG_MODE="false"
 
-# Create state directory
-RUN mkdir -p /tmp/huntarr-radarr-state
+# Create a directory for our script and state files
+RUN mkdir -p /app && mkdir -p /tmp/huntarr-radarr-state
 
-# Copy the script into the container
-COPY huntarr.py /app/huntarr.py
-
-# Make the script executable
-RUN chmod +x /app/huntarr.py
-
-# Set working directory
+# Switch working directory
 WORKDIR /app
 
-# Set the default command to run the script
-ENTRYPOINT ["python", "huntarr.py"]
+# Install any Python dependencies you need for the script
+# (requests is used in your code, so we explicitly install it)
+RUN pip install --no-cache-dir requests
 
-# Add health check
+# Copy the Python script into the container
+COPY huntarr.py /app/huntarr.py
+
+# Make the script executable (optional, but good practice)
+RUN chmod +x /app/huntarr.py
+
+# Add a simple HEALTHCHECK (this is optional)
 HEALTHCHECK --interval=5m --timeout=3s \
-  CMD ps aux | grep python | grep huntarr.py || exit 1
+  CMD pgrep -f huntarr.py || exit 1
+
+# The script’s entrypoint. It will run your `huntarr.py` when the container starts.
+ENTRYPOINT ["python", "huntarr.py"]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Huntarr [Radarr Edition] - Python Version
+Huntarr [Radarr Edition]
 Automatically search for missing movies and quality upgrades in Radarr
 """
 

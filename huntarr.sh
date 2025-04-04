@@ -116,27 +116,45 @@ rescan_movie() {
        "$API_URL/api/v3/command"
 }
 
+# Replace the existing get_cutoff_unmet and get_cutoff_unmet_count functions with these:
+
 get_cutoff_unmet() {
-  # Use the API's qualityCutoffNotMet parameter to directly get movies needing upgrades
-  local query="$API_URL/api/v3/movie?qualityCutoffNotMet=true"
+  # Alternative method to get movies that need quality upgrades
+  # First get all movies
+  local all_movies
+  all_movies=$(get_movies)
   
-  # Add monitored filter if needed
-  if [ "$MONITORED_ONLY" = "true" ]; then
-    query="${query}&monitored=true"
+  if [ -z "$all_movies" ]; then
+    echo "ERROR: Unable to retrieve movie data from Radarr. Retrying..."
+    return 1
   fi
   
-  curl -s -H "X-Api-Key: $API_KEY" "$query"
+  # Then filter for those with hasFile=true and qualityCutoffNotMet=true
+  # This is more reliable than using the API filter directly
+  local filter_cmd="["
+  
+  if [ "$MONITORED_ONLY" = "true" ]; then
+    filter_cmd+=' .[] | select(.hasFile == true and .qualityCutoffNotMet == true and .monitored == true) '
+  else
+    filter_cmd+=' .[] | select(.hasFile == true and .qualityCutoffNotMet == true) '
+  fi
+  
+  filter_cmd+="]"
+  
+  echo "$all_movies" | jq "$filter_cmd"
 }
 
 get_cutoff_unmet_count() {
   # Returns the number of movies that need upgrades
-  local query="$API_URL/api/v3/movie?qualityCutoffNotMet=true"
+  local cutoff_json
+  cutoff_json=$(get_cutoff_unmet)
   
-  if [ "$MONITORED_ONLY" = "true" ]; then
-    query="${query}&monitored=true"
+  if [ -z "$cutoff_json" ]; then
+    echo "0"
+    return
   fi
   
-  curl -s -H "X-Api-Key: $API_KEY" "$query" | jq 'length'
+  echo "$cutoff_json" | jq 'length'
 }
 
 # ---------------------------

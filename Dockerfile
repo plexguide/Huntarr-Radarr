@@ -1,15 +1,9 @@
-# Use a lightweight Alpine Linux base image
-FROM alpine:latest
+# Start from a lightweight Python image
+FROM python:3.10-slim
 
-# Install required dependencies
-RUN apk add --no-cache \
-    bash \
-    curl \
-    jq
-
-# Set default environment variables
-ENV API_KEY="your-api-key" \
-    API_URL="http://your-radarr-address:7878" \
+# Set default environment variables (non-sensitive only!)
+# NOTE: We removed API_KEY to avoid the Dockerfile secrets warning
+ENV API_URL="http://your-radarr-address:7878" \
     SEARCH_TYPE="both" \
     MAX_MISSING="1" \
     MAX_UPGRADES="5" \
@@ -19,20 +13,24 @@ ENV API_KEY="your-api-key" \
     STATE_RESET_INTERVAL_HOURS="168" \
     DEBUG_MODE="false"
 
-# Create state directory
-RUN mkdir -p /tmp/huntarr-radarr-state
+# Create a directory for our script and state files
+RUN mkdir -p /app && mkdir -p /tmp/huntarr-radarr-state
 
-# Copy the script into the container
-COPY huntarr.sh /usr/local/bin/huntarr.sh
+# Switch working directory
+WORKDIR /app
 
-# Make the script executable
-RUN chmod +x /usr/local/bin/huntarr.sh
+# Install any Python dependencies you need (requests is needed by huntarr.py)
+RUN pip install --no-cache-dir requests
 
-# Set the default command to run the script
-ENTRYPOINT ["/usr/local/bin/huntarr.sh"]
+# Copy the Python script into the container
+COPY huntarr.py /app/huntarr.py
 
-# Add labels for better container management
-LABEL maintainer="PlexGuide" \
-      description="Huntarr [Radarr Edition] - Automates finding missing movies and quality upgrades" \
-      version="7.0" \
-      url="https://github.com/plexguide/Huntarr-Radarr"
+# Make the script executable (optional but good practice)
+RUN chmod +x /app/huntarr.py
+
+# Add a simple HEALTHCHECK (optional)
+HEALTHCHECK --interval=5m --timeout=3s \
+  CMD pgrep -f huntarr.py || exit 1
+
+# The script’s entrypoint. It will run your `huntarr.py` when the container starts.
+ENTRYPOINT ["python", "huntarr.py"]

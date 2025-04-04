@@ -8,7 +8,7 @@ RUN apk add --no-cache \
     jq
 
 # Set default environment variables
-ENV API_KEY="your-api-key" \
+ENV API_KEY="" \
     API_URL="http://your-radarr-address:7878" \
     SEARCH_TYPE="both" \
     MAX_MISSING="1" \
@@ -23,7 +23,7 @@ ENV API_KEY="your-api-key" \
 RUN mkdir -p /tmp/huntarr-radarr-state
 
 # Copy the script into the container
-COPY huntarr.sh /usr/local/bin/huntarr.sh
+COPY ./huntarr.sh /usr/local/bin/huntarr.sh
 
 # Make the script executable
 RUN chmod +x /usr/local/bin/huntarr.sh

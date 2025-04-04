@@ -204,19 +204,21 @@ docker logs huntarr-radarr
 
 ### Unraid Users
 
-1. Install the plugin called `UserScripts`
-2. Copy and paste the following script file as a new script - [huntarr.sh](huntarr.sh) 
-3. Ensure to set it to `Run in the background` if your array is already running and set the schedule to `At Startup Array`
-4. Update the variables at the top of the script to match your configuration
+Run from the Unraid Command Line. This will eventaully be submitted to the Unraid App Store
 
-<table>
-  <tr>
-    <td colspan="2">
-      <img src="https://github.com/user-attachments/assets/dbaf9864-1db9-42a5-bd0b-60b6310f9694" width="100%"/>
-      <p align="center"><em>User Scripts - Unraid</em></p>
-    </td>
-  </tr>
-</table>
+docker run -d --name huntarr-radarr \
+  --restart always \
+  -e API_KEY="your-api-key" \
+  -e API_URL="http://your-radarr-address:7878" \
+  -e MONITORED_ONLY="true" \
+  -e SEARCH_TYPE="both" \
+  -e MAX_MISSING="1" \
+  -e MAX_UPGRADES="5" \
+  -e SLEEP_DURATION="900" \
+  -e RANDOM_SELECTION="true" \
+  -e STATE_RESET_INTERVAL_HOURS="168" \
+  -e DEBUG_MODE="false" \
+  huntarr/4radarr:latest
 
 ### SystemD Service
 

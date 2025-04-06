@@ -57,26 +57,24 @@ def process_cutoff_upgrades() -> bool:
         # Refresh
         logger.info(" - Refreshing movie information...")
         refresh_res = refresh_movie(movie_id)
-        if not refresh_res or 'id' not in refresh_res:
+        if not refresh_res:
             logger.warning("WARNING: Refresh command failed. Skipping this movie.")
-            time.sleep(10)
             continue
         
-        logger.info(f"Refresh command accepted (ID: {refresh_res.get('id')}). Waiting 5s...")
-        time.sleep(5)
+        logger.info(f"Refresh command completed successfully.")
         
         # Search
         logger.info(" - Searching for quality upgrade...")
         search_res = movie_search(movie_id)
-        if search_res and 'id' in search_res:
-            logger.info(f"Search command accepted (ID: {search_res.get('id')}).")
+        if search_res:
+            logger.info(f"Search command completed successfully.")
             processing_done = True
             
             # Rescan
             logger.info(" - Rescanning movie folder...")
             rescan_res = rescan_movie(movie_id)
-            if rescan_res and 'id' in rescan_res:
-                logger.info(f"Rescan command accepted (ID: {rescan_res.get('id')}).")
+            if rescan_res:
+                logger.info(f"Rescan command completed successfully.")
             else:
                 logger.warning("WARNING: Rescan command not available or failed.")
             
@@ -86,7 +84,6 @@ def process_cutoff_upgrades() -> bool:
             logger.info(f"Processed {movies_processed}/{HUNT_UPGRADE_MOVIES} upgrade movies this cycle.")
         else:
             logger.warning(f"WARNING: Search command failed for movie ID {movie_id}.")
-            time.sleep(10)
     
     logger.info(f"Completed processing {movies_processed} upgrade movies for this cycle.")
     truncate_processed_list(PROCESSED_UPGRADE_FILE)

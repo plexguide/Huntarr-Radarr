@@ -177,7 +177,7 @@ docker run -d --name huntarr-radarr \
   -e RANDOM_SELECTION="true" \
   -e STATE_RESET_INTERVAL_HOURS="168" \
   -e DEBUG_MODE="false" \
-  huntarr/huntarr-radarr:3.0
+  huntarr/4radarr:3.0
 
 To check on the status of the program, you should see new files downloading or you can type:
 ```bash
@@ -237,7 +237,7 @@ docker run -d --name huntarr-radarr \
   -e RANDOM_SELECTION="true" \
   -e STATE_RESET_INTERVAL_HOURS="168" \
   -e DEBUG_MODE="false" \
-  huntarr/huntarr-radarr:3.0
+  huntarr/4radarr:3.0
 
 ### SystemD Service
 

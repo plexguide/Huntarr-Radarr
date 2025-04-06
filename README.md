@@ -1,4 +1,4 @@
-# Huntarr [Radarr Edition] - Force Radarr to Hunt Missing Movies & Upgrade Movie Qualities
+# Huntarr [Radarr Edition] - Force Radarr to Hunt Missing Movies & Upgrade Movie Qualities 
 
 <h2 align="center">Want to Help? Click the Star in the Upper-Right Corner! ⭐</h2>
 

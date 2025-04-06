@@ -192,7 +192,7 @@ For those who prefer Docker Compose, add this to your `docker-compose.yml` file:
 version: "3.8"
 services:
   huntarr-radarr:
-    image: huntarr/huntarr-radarr:3.0
+    image: huntarr/4radarr:3.0
     container_name: huntarr-radarr
     restart: always
     environment:

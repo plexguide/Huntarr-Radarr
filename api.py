@@ -5,9 +5,11 @@ Handles all communication with the Radarr API
 """
 
 import requests
+import time
+import datetime
 from typing import List, Dict, Any, Optional, Union
 from utils.logger import logger, debug_log
-from config import API_KEY, API_URL, API_TIMEOUT
+from config import API_KEY, API_URL, API_TIMEOUT, MONITORED_ONLY, SKIP_FUTURE_RELEASES
 
 # Create a session for reuse
 session = requests.Session()
@@ -62,17 +64,52 @@ def get_cutoff_unmet() -> List[Dict]:
 def get_missing_movies() -> List[Dict]:
     """
     Get a list of movies that are missing files.
-    Filters based on MONITORED_ONLY setting.
+    Filters based on MONITORED_ONLY setting and optionally
+    excludes future releases.
     """
     movies = get_movies()
     
     if not movies:
         return []
     
-    if MONITORED_ONLY:
-        return [m for m in movies if m.get('monitored') and not m.get('hasFile')]
-    else:
-        return [m for m in movies if not m.get('hasFile')]
+    missing_movies = []
+    
+    # Get current date in ISO format (YYYY-MM-DD) for date comparison
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    
+    for movie in movies:
+        # Skip if not missing a file
+        if movie.get('hasFile'):
+            continue
+            
+        # Apply monitored filter if needed
+        if MONITORED_ONLY and not movie.get('monitored'):
+            continue
+            
+        # Skip future releases if enabled
+        if SKIP_FUTURE_RELEASES:
+            # Check physical, digital, and cinema release dates
+            physical_release = movie.get('physicalRelease')
+            digital_release = movie.get('digitalRelease') 
+            in_cinemas = movie.get('inCinemas')
+            
+            # Use the earliest available release date for comparison
+            release_date = None
+            if physical_release:
+                release_date = physical_release
+            elif digital_release:
+                release_date = digital_release
+            elif in_cinemas:
+                release_date = in_cinemas
+                
+            # Skip if release date exists and is in the future
+            if release_date and release_date > current_date:
+                logger.debug(f"Skipping future release '{movie.get('title')}' with date {release_date}")
+                continue
+                
+        missing_movies.append(movie)
+    
+    return missing_movies
 
 def refresh_movie(movie_id: int) -> Optional[Dict]:
     """Refresh a movie by ID"""

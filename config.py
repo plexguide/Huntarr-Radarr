@@ -49,6 +49,7 @@ except ValueError:
 # Selection Settings
 RANDOM_SELECTION = os.environ.get("RANDOM_SELECTION", "true").lower() == "true"
 MONITORED_ONLY = os.environ.get("MONITORED_ONLY", "true").lower() == "true"
+SKIP_FUTURE_RELEASES = os.environ.get("SKIP_FUTURE_RELEASES", "true").lower() == "true"
 
 # Hunt mode: "missing", "upgrade", or "both"
 HUNT_MODE = os.environ.get("HUNT_MODE", "both")
@@ -65,5 +66,6 @@ def log_configuration(logger):
     logger.info(f"Upgrade Configuration: HUNT_UPGRADE_MOVIES={HUNT_UPGRADE_MOVIES}")
     logger.info(f"State Reset Interval: {STATE_RESET_INTERVAL_HOURS} hours")
     logger.info(f"MONITORED_ONLY={MONITORED_ONLY}, RANDOM_SELECTION={RANDOM_SELECTION}")
+    logger.info(f"SKIP_FUTURE_RELEASES={SKIP_FUTURE_RELEASES}")
     logger.info(f"HUNT_MODE={HUNT_MODE}, SLEEP_DURATION={SLEEP_DURATION}s")
     logger.debug(f"API_KEY={API_KEY}")

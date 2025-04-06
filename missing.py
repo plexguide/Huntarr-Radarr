@@ -58,19 +58,15 @@ def process_missing_movies() -> bool:
         # Refresh
         logger.info(" - Refreshing movie...")
         refresh_res = refresh_movie(movie_id)
-        if not refresh_res or 'id' not in refresh_res:
+        if not refresh_res:
             logger.warning(f"WARNING: Refresh command failed for {title}. Skipping.")
-            time.sleep(10)
             continue
-        
-        logger.info(f"Refresh command accepted (ID: {refresh_res.get('id')}). Waiting 5s...")
-        time.sleep(5)
         
         # Search
         logger.info(f" - Searching for \"{title}\"...")
         search_res = movie_search(movie_id)
-        if search_res and 'id' in search_res:
-            logger.info(f"Search command accepted (ID: {search_res.get('id')}).")
+        if search_res:
+            logger.info(f"Search command completed successfully.")
             processing_done = True
         else:
             logger.warning("WARNING: Movie search failed.")
@@ -79,8 +75,8 @@ def process_missing_movies() -> bool:
         # Rescan
         logger.info(" - Rescanning movie folder...")
         rescan_res = rescan_movie(movie_id)
-        if rescan_res and 'id' in rescan_res:
-            logger.info(f"Rescan command accepted (ID: {rescan_res.get('id')}).")
+        if rescan_res:
+            logger.info(f"Rescan command completed successfully.")
         else:
             logger.warning("WARNING: Rescan command not available or failed.")
         

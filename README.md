@@ -224,6 +224,7 @@ docker logs huntarr-radarr
 
 Run from the Unraid Command Line. This will eventaully be submitted to the Unraid App Store
 
+```bash
 docker run -d --name huntarr-radarr \
   --restart always \
   -e API_KEY="your-api-key" \
@@ -238,6 +239,7 @@ docker run -d --name huntarr-radarr \
   -e STATE_RESET_INTERVAL_HOURS="168" \
   -e DEBUG_MODE="false" \
   huntarr/4radarr:latest
+```
 
 ### SystemD Service
 

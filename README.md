@@ -171,7 +171,7 @@ docker run -d --name huntarr-radarr \
   -e MONITORED_ONLY="true" \
   -e SKIP_FUTURE_RELEASES="true" \
   -e HUNT_MISSING_MOVIES="1" \
-  -e HUNT_UPGRADE_MOVIES="5" \
+  -e HUNT_UPGRADE_MOVIES="0" \
   -e SLEEP_DURATION="900" \
   -e RANDOM_SELECTION="true" \
   -e STATE_RESET_INTERVAL_HOURS="168" \
@@ -201,7 +201,7 @@ services:
       MONITORED_ONLY: "true"
       SKIP_FUTURE_RELEASES: "true"
       HUNT_MISSING_MOVIES: "1"
-      HUNT_UPGRADE_MOVIES: "5"
+      HUNT_UPGRADE_MOVIES: "0"
       SLEEP_DURATION: "900"
       RANDOM_SELECTION: "true"
       STATE_RESET_INTERVAL_HOURS: "168"
@@ -231,7 +231,7 @@ docker run -d --name huntarr-radarr \
   -e MONITORED_ONLY="true" \
   -e SKIP_FUTURE_RELEASES="true" \
   -e HUNT_MISSING_MOVIES="1" \
-  -e HUNT_UPGRADE_MOVIES="5" \
+  -e HUNT_UPGRADE_MOVIES="0" \
   -e SLEEP_DURATION="900" \
   -e RANDOM_SELECTION="true" \
   -e STATE_RESET_INTERVAL_HOURS="168" \

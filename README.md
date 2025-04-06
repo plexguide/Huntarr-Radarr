@@ -33,7 +33,7 @@ This script continually searches your Radarr library for movies with missing fil
 
 * [Huntarr - Sonarr Edition](https://github.com/plexguide/Huntarr-Sonarr) - Sister version for TV Shows
 * [Huntarr - Lidarr Edition](https://github.com/plexguide/Huntarr-Lidarr) - Sister version for Music
-* [Huntarr - Redarr Edition](https://github.com/plexguide/Huntarr-Readarr) - Sister version for Books
+* [Huntarr - Readarr Edition](https://github.com/plexguide/Huntarr-Readarr) - Sister version for Books
 * [Unraid Intel ARC Deployment](https://github.com/plexguide/Unraid_Intel-ARC_Deployment) - Convert videos to AV1 Format (I've saved 325TB encoding to AV1)
 * Visit [PlexGuide](https://plexguide.com) for more great scripts
 

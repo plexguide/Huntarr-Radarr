@@ -8,7 +8,7 @@
   </tr>
 </table>
 
-**NOTE**: This utilizes Radarr API Version - `3`. The Script: [huntarr.sh](huntarr.sh)
+**NOTE**: This utilizes Radarr API Version - `3`.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -27,12 +27,12 @@
 
 ## Overview
 
-This script continually searches your Radarr library for missing movies and movies that need quality upgrades. It automatically triggers searches for both missing movies and movies below your quality cutoff. It's designed to run continuously while being gentle on your indexers, helping you gradually complete your movie collection with the best available quality.
+This script continually searches your Radarr library for movies with missing files and movies that need quality upgrades. It automatically triggers searches for both missing movies and movies below your quality cutoff. It's designed to run continuously while being gentle on your indexers, helping you gradually complete your movie collection with the best available quality.
 
 ## Related Projects
 
-* [Huntarr - Sonarr Edition](https://github.com/plexguide/Sonarr-Hunter) - Sister version for TV shows
-* [Huntarr - Lidarr Edition](https://github.com/plexguide/Lidarr-Hunter) - Sister version for music
+* [Huntarr - Sonarr Edition](https://github.com/plexguide/Huntarr-Sonarr) - Sister version for TV shows
+* [Huntarr - Lidarr Edition](https://github.com/plexguide/Huntarr-Lidarr) - Sister version for music
 * [Unraid Intel ARC Deployment](https://github.com/plexguide/Unraid_Intel-ARC_Deployment) - Convert videos to AV1 Format (I've saved 325TB encoding to AV1)
 * Visit [PlexGuide](https://plexguide.com) for more great scripts
 
@@ -52,6 +52,9 @@ My 12-year-old daughter is passionate about singing, dancing, and exploring STEM
 - 🛡️ **Error Handling**: Gracefully handles connection issues and API failures
 - 🔁 **State Tracking**: Remembers which movies have been processed to avoid duplicate searches
 - ⚙️ **Configurable Reset Timer**: Automatically resets search history after a configurable period
+- 📦 **Modular Design**: Modern codebase with separated concerns for easier maintenance
+- ⏲️ **Configurable Timeouts**: Adjustable API timeout for large libraries
+- 🗓️ **Future Release Filtering**: Option to skip movies with future release dates
 
 ## Indexers Approving of Huntarr:
 * https://ninjacentral.co.za
@@ -61,6 +64,7 @@ My 12-year-old daughter is passionate about singing, dancing, and exploring STEM
 1. **Initialization**: Connects to your Radarr instance and analyzes your library
 2. **Missing Movies**: 
    - Identifies movies without files
+   - Optionally filters out future releases
    - Randomly selects movies to process (up to configurable limit)
    - Refreshes metadata and triggers searches
 3. **Quality Upgrades**:
@@ -99,10 +103,11 @@ The following environment variables can be configured:
 |------------------------------|-----------------------------------------------------------------------|---------------|
 | `API_KEY`                    | Your Radarr API key                                                      | Required   |
 | `API_URL`                    | URL to your Radarr instance                                              | Required   |
+| `API_TIMEOUT`                | Timeout in seconds for API requests to Radarr                            | 60         |
 | `MONITORED_ONLY`             | Only process monitored movies                                            | true       |
-| `SEARCH_TYPE`                | Which search to perform: `"missing"`, `"upgrade"`, or `"both"`           | both       |
-| `MAX_MISSING`                | Maximum missing movies to process per cycle                              | 1          |
-| `MAX_UPGRADES`               | Maximum upgrade movies to process per cycle                              | 5          |
+| `SKIP_FUTURE_RELEASES`       | Skip processing movies with release dates in the future                  | true       |
+| `HUNT_MISSING_MOVIES`        | Maximum missing movies to process per cycle                              | 1          |
+| `HUNT_UPGRADE_MOVIES`        | Maximum upgrade movies to process per cycle                              | 5          |
 | `SLEEP_DURATION`             | Seconds to wait after completing a cycle (900 = 15 minutes)              | 900        |
 | `RANDOM_SELECTION`           | Use random selection (`true`) or sequential (`false`)                    | true       |
 | `STATE_RESET_INTERVAL_HOURS` | Hours which the processed state files reset (168=1 week, 0=never reset)  | 168        |
@@ -110,20 +115,28 @@ The following environment variables can be configured:
 
 ### Detailed Configuration Explanation
 
-- **SEARCH_TYPE**  
-  - Determines which type of search the script performs.  
-  - Options:  
-    - `"missing"`: Only processes missing movies (movies that haven't been downloaded yet).  
-    - `"upgrade"`: Only processes movies that need quality upgrades (do not meet the quality cutoff).  
-    - `"both"`: First processes missing movies and then processes upgrade movies in one cycle.
+- **API_TIMEOUT**
+  - Sets the maximum number of seconds to wait for Radarr API responses before timing out.
+  - This is particularly important when working with large libraries.
+  - If you experience timeout errors, increase this value.
+  - For libraries with thousands of movies, values of 90-120 seconds may be necessary.
+  - Default is 60 seconds, which works well for most medium-sized libraries.
 
-- **MAX_MISSING**  
+- **SKIP_FUTURE_RELEASES**
+  - When set to `true`, movies with release dates in the future will be skipped during missing movie processing.
+  - This prevents searching for content that isn't yet available.
+  - The script checks physical, digital, and theater release dates.
+  - Set to `false` if you want to process all missing movies regardless of release date.
+
+- **HUNT_MISSING_MOVIES**  
   - Sets the maximum number of missing movies to process in each cycle.  
   - Once this limit is reached, the script stops processing further missing movies until the next cycle.
+  - Set to `0` to disable missing movie processing completely.
 
-- **MAX_UPGRADES**  
+- **HUNT_UPGRADE_MOVIES**  
   - Sets the maximum number of upgrade movies to process in each cycle.  
-  - When this limit is reached, the upgrade portion of the cycle stops and the script waits for the next cycle.
+  - When this limit is reached, the upgrade portion of the cycle stops.
+  - Set to `0` to disable quality upgrade processing completely.
 
 - **RANDOM_SELECTION**
   - When `true`, selects movies randomly, which helps distribute searches across your library.
@@ -133,9 +146,9 @@ The following environment variables can be configured:
   - Controls how often the script "forgets" which movies it has already processed.  
   - The script records the IDs of missing movies and upgrade movies that have been processed.  
   - When the age of these records exceeds the number of hours set by this variable, the records are cleared automatically.  
-  - This reset allows the script to re-check movies that were previously processed, so if there are changes (such as improved quality), they can be processed again.  
+  - This reset allows the script to re-check movies that were previously processed, so if there are changes (such as improved quality), they can be processed again.
   - Setting this to `0` will disable the reset functionality entirely - processed items will be remembered indefinitely.
-  - Default is 168 hours (one week) - meaning the script will start fresh and re-check everything weekly.
+  - Default is 168 hours (one week) - meaning the script will start fresh weekly.
 
 - **DEBUG_MODE**
   - When set to `true`, the script will output detailed debugging information about API responses and internal operations.
@@ -154,16 +167,16 @@ docker run -d --name huntarr-radarr \
   --restart always \
   -e API_KEY="your-api-key" \
   -e API_URL="http://your-radarr-address:7878" \
+  -e API_TIMEOUT="90" \
   -e MONITORED_ONLY="true" \
-  -e SEARCH_TYPE="both" \
-  -e MAX_MISSING="1" \
-  -e MAX_UPGRADES="5" \
+  -e SKIP_FUTURE_RELEASES="true" \
+  -e HUNT_MISSING_MOVIES="1" \
+  -e HUNT_UPGRADE_MOVIES="5" \
   -e SLEEP_DURATION="900" \
   -e RANDOM_SELECTION="true" \
   -e STATE_RESET_INTERVAL_HOURS="168" \
   -e DEBUG_MODE="false" \
-  huntarr/4radarr:latest
-```
+  huntarr/huntarr-radarr:3.1
 
 To check on the status of the program, you should see new files downloading or you can type:
 ```bash
@@ -178,16 +191,17 @@ For those who prefer Docker Compose, add this to your `docker-compose.yml` file:
 version: "3.8"
 services:
   huntarr-radarr:
-    image: huntarr/4radarr:latest
+    image: huntarr/huntarr-radarr:3.1
     container_name: huntarr-radarr
     restart: always
     environment:
       API_KEY: "your-api-key"
       API_URL: "http://your-radarr-address:7878"
+      API_TIMEOUT: "90"
       MONITORED_ONLY: "true"
-      SEARCH_TYPE: "both"
-      MAX_MISSING: "1"
-      MAX_UPGRADES: "5"
+      SKIP_FUTURE_RELEASES: "true"
+      HUNT_MISSING_MOVIES: "1"
+      HUNT_UPGRADE_MOVIES: "5"
       SLEEP_DURATION: "900"
       RANDOM_SELECTION: "true"
       STATE_RESET_INTERVAL_HOURS: "168"
@@ -213,15 +227,16 @@ docker run -d --name huntarr-radarr \
   --restart always \
   -e API_KEY="your-api-key" \
   -e API_URL="http://your-radarr-address:7878" \
+  -e API_TIMEOUT="90" \
   -e MONITORED_ONLY="true" \
-  -e SEARCH_TYPE="both" \
-  -e MAX_MISSING="1" \
-  -e MAX_UPGRADES="5" \
+  -e SKIP_FUTURE_RELEASES="true" \
+  -e HUNT_MISSING_MOVIES="1" \
+  -e HUNT_UPGRADE_MOVIES="5" \
   -e SLEEP_DURATION="900" \
   -e RANDOM_SELECTION="true" \
   -e STATE_RESET_INTERVAL_HOURS="168" \
   -e DEBUG_MODE="false" \
-  huntarr/4radarr:latest
+  huntarr/huntarr-radarr:3.1
 
 ### SystemD Service
 
@@ -241,10 +256,11 @@ Type=simple
 User=your-username
 Environment="API_KEY=your-api-key"
 Environment="API_URL=http://localhost:7878"
+Environment="API_TIMEOUT=90"
 Environment="MONITORED_ONLY=true"
-Environment="SEARCH_TYPE=both"
-Environment="MAX_MISSING=1"
-Environment="MAX_UPGRADES=5"
+Environment="SKIP_FUTURE_RELEASES=true"
+Environment="HUNT_MISSING_MOVIES=1"
+Environment="HUNT_UPGRADE_MOVIES=5"
 Environment="SLEEP_DURATION=900"
 Environment="RANDOM_SELECTION=true"
 Environment="STATE_RESET_INTERVAL_HOURS=168"
@@ -271,16 +287,19 @@ sudo systemctl start huntarr
 - **New Movie Setup**: Automatically find newly added movies
 - **Background Service**: Run it in the background to continuously maintain your library
 - **Smart Rotation**: With state tracking, ensures all content gets attention over time
+- **Large Library Management**: With optimized performance and configurable timeouts, handles even the largest libraries
+- **Release Date Awareness**: Skip movies that aren't released yet, focusing only on currently available content
 
 ## Tips
 
 - **First-Time Use**: Start with default settings to ensure it works with your setup
 - **Adjusting Speed**: Lower the `SLEEP_DURATION` to search more frequently (be careful with indexer limits)
-- **Focus on Missing or Upgrades**: Use the `SEARCH_TYPE` setting to focus on what matters to you
-- **Batch Size Control**: Adjust `MAX_MISSING` and `MAX_UPGRADES` based on your indexer's rate limits
+- **Batch Size Control**: Adjust `HUNT_MISSING_MOVIES` and `HUNT_UPGRADE_MOVIES` based on your indexer's rate limits
 - **Monitored Status**: Set `MONITORED_ONLY=false` if you want to download all missing movies regardless of monitored status
 - **System Resources**: The script uses minimal resources and can run continuously on even low-powered systems
 - **Debugging Issues**: Enable `DEBUG_MODE=true` temporarily to see detailed logs when troubleshooting
+- **API Timeouts**: If you have a large library, increase the `API_TIMEOUT` value to 90-120 seconds to prevent timeout errors
+- **Future Releases**: Use `SKIP_FUTURE_RELEASES=true` to avoid searching for movies not yet released
 
 ## Troubleshooting
 
@@ -289,7 +308,8 @@ sudo systemctl start huntarr
 - **Command Failures**: If search commands fail, try using the Radarr UI to verify what commands are available in your version
 - **Logs**: Check the container logs with `docker logs huntarr-radarr` if running in Docker
 - **Debug Mode**: Enable `DEBUG_MODE=true` to see detailed API responses and process flow
-- **State Files**: The script stores state in `/tmp/huntarr-radarr-state/` - if something seems stuck, you can try deleting these files
+- **State Files**: The script stores state in `/tmp/huntarr-state/` - if something seems stuck, you can try deleting these files
+- **Timeout Errors**: If you see "Read timed out" errors, increase the `API_TIMEOUT` value to give Radarr more time to respond
 
 ---
 
@@ -301,6 +321,10 @@ sudo systemctl start huntarr
 - **v5**: Added debug mode and improved error handling
 - **v6**: Enhanced random selection mode for better distribution
 - **v7**: Renamed from "Radarr Hunter" to "Huntarr [Radarr Edition]"
+- **v8**: Complete modular refactoring for better maintainability
+- **v9**: Added configurable API timeout and standardized parameter naming with HUNT_ prefix
+- **v10**: Added version tags for improved stability and predictable updates
+- **v11**: Added SKIP_FUTURE_RELEASES option to prevent searching for unreleased movies
 
 ---
 

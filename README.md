@@ -167,7 +167,7 @@ docker run -d --name huntarr-radarr \
   --restart always \
   -e API_KEY="your-api-key" \
   -e API_URL="http://your-radarr-address:7878" \
-  -e API_TIMEOUT="90" \
+  -e API_TIMEOUT="60" \
   -e MONITORED_ONLY="true" \
   -e SKIP_FUTURE_RELEASES="true" \
   -e HUNT_MISSING_MOVIES="1" \
@@ -197,7 +197,7 @@ services:
     environment:
       API_KEY: "your-api-key"
       API_URL: "http://your-radarr-address:7878"
-      API_TIMEOUT: "90"
+      API_TIMEOUT: "60"
       MONITORED_ONLY: "true"
       SKIP_FUTURE_RELEASES: "true"
       HUNT_MISSING_MOVIES: "1"
@@ -227,7 +227,7 @@ docker run -d --name huntarr-radarr \
   --restart always \
   -e API_KEY="your-api-key" \
   -e API_URL="http://your-radarr-address:7878" \
-  -e API_TIMEOUT="90" \
+  -e API_TIMEOUT="60" \
   -e MONITORED_ONLY="true" \
   -e SKIP_FUTURE_RELEASES="true" \
   -e HUNT_MISSING_MOVIES="1" \
@@ -256,7 +256,7 @@ Type=simple
 User=your-username
 Environment="API_KEY=your-api-key"
 Environment="API_URL=http://localhost:7878"
-Environment="API_TIMEOUT=90"
+Environment="API_TIMEOUT=60"
 Environment="MONITORED_ONLY=true"
 Environment="SKIP_FUTURE_RELEASES=true"
 Environment="HUNT_MISSING_MOVIES=1"

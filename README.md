@@ -178,6 +178,7 @@ docker run -d --name huntarr-radarr \
   -e STATE_RESET_INTERVAL_HOURS="168" \
   -e DEBUG_MODE="false" \
   huntarr/4radarr:latest
+```
 
 To check on the status of the program, you should see new files downloading or you can type:
 ```bash

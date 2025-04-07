@@ -8,7 +8,7 @@
   </tr>
 </table>
 
-**NOTE**: This utilizes Radarr API Version - `3`.
+**NOTE**: This utilizes Radarr API Version - `3`. Legacy Name of this Program: Radarr Hunter.
 
 ## Table of Contents
 - [Overview](#overview)

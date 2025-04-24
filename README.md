@@ -1,4 +1,6 @@
-# Huntarr [Radarr Edition] - Force Radarr to Hunt Missing Movies & Upgrade Movie Qualities 
+# THIS IS LEGACY AND WILL NOT BE UPDATED - NEW ONE @ https://github.com/plexguide/Huntarr.io (UI+Sonarr+Radarr)
+
+## Huntarr [Radarr Edition] - Force Radarr to Hunt Missing Movies & Upgrade Movie Qualities 
 
 <h2 align="center">Want to Help? Click the Star in the Upper-Right Corner! ⭐</h2>
 
